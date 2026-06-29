@@ -1,0 +1,41 @@
+- name: Install attacker tools
+  apt:
+    name:
+      - wireshark
+      - tcpdump
+      - arping
+      - net-tools
+      - iproute2
+      - curl
+      - nmap
+    state: present
+    update_cache: true
+
+- name: Allow kali user to use sudo without a password
+  copy:
+    content: "kali ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/kali
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Install bonding kernel tools
+  apt:
+    name: ifenslave
+    state: present
+
+- name: Configure Network Bonding for Failover
+  copy:
+    dest: /etc/network/interfaces
+    content: |
+      source /etc/network/interfaces.d/*
+
+      auto lo
+      iface lo inet loopback
+
+      # Das virtuelle Haupt-Interface (Bond)
+      auto bond0
+      iface bond0 inet dhcp
+          bond-slaves eth1 eth2
+          bond-mode 1          # 1 steht für Active-Backup
+          bond-miimon 100      # Prüft alle 100ms, ob die Leitung noch steht
+          bond-primary eth1    # eth1 ist die bevorzugte Hauptleitung
